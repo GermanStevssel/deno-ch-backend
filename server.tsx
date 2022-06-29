@@ -2,26 +2,47 @@
 import React from "https://dev.jspm.io/react/index.js";
 // @deno-types='https://deno.land/x/servest@v1.3.4/types/react-dom/server/index.d.ts'
 import ReactDOMServer from "https://dev.jspm.io/react-dom/server.js";
-import { createApp } from "https://deno.land/x/servest@v1.3.4/mod.ts";
+import {
+	contentTypeFilter,
+	createApp,
+} from "https://deno.land/x/servest@v1.3.4/mod.ts";
 
 const app = createApp();
 
 const env = Deno.env.toObject();
-const PORT = env.PORT || 8080;
-const colors: Array<string> = [];
 
-const bodyContent = () => {
+let colors: Array<string> = [];
+
+const body = () =>
 	ReactDOMServer.renderToString(
 		<html>
 			<head>
-				<meta charset="UTF-8" />
-				<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+				<meta charSet="UTF-8" />
+				<meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				<title>Colores</title>
 			</head>
-			<body style={{ background: "#000000", color: "#FFF" }}>
-				<form method="POST">
-					<label for="color">Indica tus colores favoritos</label>
+			<body>
+				<h1
+					style={{
+						display: "flex",
+						justifyContent: "center",
+					}}
+				>
+					Colores Favoritos
+				</h1>
+				<form
+					method="POST"
+					style={{
+						display: "flex",
+						justifyContent: "center",
+						flexDirection: "column",
+						alignItems: "center",
+						maxWidth: "400px",
+						margin: "auto",
+					}}
+				>
+					<label htmlFor="color">Indica tus colores favoritos</label>
 					<br />
 					<input type="text" id="color" name="color" />
 					<br />
@@ -39,7 +60,6 @@ const bodyContent = () => {
 			</body>
 		</html>
 	);
-};
 
 app.get("/", async (req) => {
 	await req.respond({
@@ -47,24 +67,29 @@ app.get("/", async (req) => {
 		headers: new Headers({
 			"content-type": "text/html; charset=UTF-8",
 		}),
-		body: bodyContent(),
+		body: body(),
 	});
 });
 
-app.post("/", async (req) => {
-	const color = await req.formData().value("color");
-	if (color) {
-		colors = [...colors, color];
+app.post(
+	"/",
+	contentTypeFilter("application/x-www-form-urlencoded"),
+	async (req) => {
+		const form = await req.formData();
+		const color = form!.value("color");
+		if (color) {
+			colors = [...colors, color];
+		}
+
+		req.respond({
+			status: 200,
+			headers: new Headers({
+				"content-type": "text/html; charset=UTF-8",
+			}),
+			body: body(),
+		});
 	}
+);
 
-	req.respond({
-		status: 200,
-		headers: new Headers({
-			"content-type": "text/html; charset=UTF-8",
-		}),
-		body: bodyContent(),
-	});
-});
-
+const PORT = env.PORT || 8080;
 app.listen({ port: PORT });
-// app.listen({ port: Number(Deno.env.get("PORT")) || 8080 });
